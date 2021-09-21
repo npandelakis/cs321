@@ -1,7 +1,7 @@
 import puzzle8
 
-goal = [1,2,3,8,0,4,7,6,5]
-homes = [4,0,1,2,5,8,7,6,3]
+GOAL = [1,2,3,8,0,4,7,6,5]
+HOMES = [4,0,1,2,5,8,7,6,3]
 
 def numWrongTiles(state):
     if puzzle8.getTile(state, 4) == 0:
@@ -9,11 +9,9 @@ def numWrongTiles(state):
     else:
         #avoid double count for blank
         num_wrong = -1
-    
 
-    goal = [1,2,3,8,0,4,7,6,5]
     for i in range(9):
-        if puzzle8.getTile(state, i) != goal[i]:
+        if puzzle8.getTile(state, i) != GOAL[i]:
             num_wrong += 1
 
     return num_wrong
@@ -21,12 +19,14 @@ def numWrongTiles(state):
 
 def manhattanDistance(state):
 
+    #bfs searching for a square's home
     def getDistToHome(square, start):
         queue = [start, None]
+        #prevent re-checking previously seen squares
         seen = set()
         seen.add(start)
 
-        home = homes[square]
+        home = HOMES[square]
         level = 0
 
         while True:
