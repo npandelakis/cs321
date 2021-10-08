@@ -81,6 +81,6 @@ def astar(state, heuristic):
                 print(time.time() - start_time)
                 return path
             else:
-                heapq.heappush(priority_q, (1 + next_state_tuple[0] + heuristic(temp), temp, path))
+                heapq.heappush(priority_q, (1 + len(path) + heuristic(temp), temp, path))
 
 
