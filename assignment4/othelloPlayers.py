@@ -1,5 +1,6 @@
 import othelloBoard
 import math
+from collections import namedtuple
 from typing import Tuple, Optional
 
 '''You should modify the chooseMove code for the ComputerPlayer
@@ -42,9 +43,10 @@ class HumanPlayer:
 
 def heuristic(board) -> int:
     # Linearly combine our two heuristic functions to get a total heuristic value
-    return cornersCaptured(board) + mobilityScore(board)
+    return mobilityScore(board) + cornersCaptured(board)
 
-def cornersCaptured(board):
+
+def cornersCaptured(board) -> int:
     # Return a score from -100 to 100 based on corners captured
     max_corners = 0
     min_corners = 0
@@ -79,6 +81,7 @@ def cornersCaptured(board):
 def mobilityScore(board) -> int:
     # Return a score of -100 to 100 bast on the relative amount of possible
     # moves for the max and min players
+    # Slow for regular minimax on 5+ plies 
 
     max_score = len(legalMoves(board, othelloBoard.black))
     min_score = len(legalMoves(board, othelloBoard.white))
@@ -116,6 +119,7 @@ class ComputerPlayer:
 
         def maxValue(board, plies) -> Tuple[int,Tuple[int,int]]:
             if plies == 0:
+                #allow access to numHeuristic in parent function
                 nonlocal numHeuristicCalls
                 numHeuristicCalls += 1
                 return (heuristic(board), None)
@@ -140,14 +144,13 @@ class ComputerPlayer:
 
         def minValue(board, plies) -> Tuple[int,Tuple[int,int]]:
             if plies == 0:
-                #allow access to numHeuristic calls in parent function
                 nonlocal numHeuristicCalls
                 numHeuristicCalls += 1
                 return (heuristic(board), None)
             else:
                 moves = legalMoves(board, othelloBoard.white)
                 if len(moves) == 0:
-                    return (board.scores()[0], None)
+                    return (board.scores()[1], None)
                 else:
                     best = math.inf
                     best_move = None
@@ -161,12 +164,12 @@ class ComputerPlayer:
                 return (best, best_move)
 
         if self.color == othelloBoard.white:
-                best_move = minValue(board, self.plies)[1]
-                if best_move:
-                    return (best_move[0], best_move[1], numHeuristicCalls)
-                else:
-                    # None is considered a pass
-                    return None
+            best_move = minValue(board, self.plies)[1]
+            if best_move:
+                return (best_move[0], best_move[1], numHeuristicCalls)
+            else:
+                # None is considered a pass
+                return None
         else:
             best_move = maxValue(board, self.plies)[1]
             if best_move:
@@ -174,3 +177,86 @@ class ComputerPlayer:
             else:
                 return None
 
+
+class ComputerPlayerPruning:
+    '''Computer player: chooseMove is where the action is.'''
+    def __init__(self,name,color,heuristic,plies) -> None:
+        self.name = name
+        self.color = color
+        self.heuristic = heuristic
+        self.plies = plies
+
+    # chooseMove should return a tuple that looks like:
+    # (row of move, column of move, number of times heuristic was called)
+    # We will be using the third piece of information to assist with grading.
+    def chooseMove(self,board) -> Optional[Tuple[int,int,int]]:
+        numHeuristicCalls = 0
+        ReturnMove = namedtuple('ReturnMove', ['value', 'move'])
+
+        def maxValue(board, plies, alpha, beta) -> Tuple[int,Tuple[int,int]]:
+            if plies == 0:
+                #allow access to numHeuristic in parent function
+                nonlocal numHeuristicCalls
+                numHeuristicCalls += 1
+                return ReturnMove(heuristic(board), None)
+            else:
+                moves = legalMoves(board, othelloBoard.black)
+                if len(moves) == 0:
+                    #0 for black score
+                    return ReturnMove(board.scores()[0], None)
+                else:
+                    best_value = -math.inf
+                    best_move = None
+
+                    for move in moves:
+                        #tuple (best, move)
+                        next_min = minValue(board.makeMove(move[0], move[1], othelloBoard.black), plies - 1, alpha, beta)
+                        if best_value < next_min.value:
+                            best_value = next_min.value
+                            best_move = move
+                            alpha = max(alpha, best_value)
+                        if best_value >= beta:
+                            return ReturnMove(best_value, best_move)
+                            
+                return ReturnMove(best_value, best_move)
+                
+
+
+        def minValue(board, plies, alpha, beta) -> Tuple[int,Tuple[int,int]]:
+            if plies == 0:
+                nonlocal numHeuristicCalls
+                numHeuristicCalls += 1
+                return ReturnMove(heuristic(board), None)
+            else:
+                moves = legalMoves(board, othelloBoard.white)
+                if len(moves) == 0:
+                    #1 for white score
+                    return ReturnMove(board.scores()[1], None)
+                else:
+                    best_value = math.inf
+                    best_move = None
+
+                    for move in moves:
+                        next_max = maxValue(board.makeMove(move[0], move[1], othelloBoard.white), plies - 1, alpha, beta)
+                        if best_value > next_max.value:
+                            best_value = next_max.value
+                            best_move = move
+                            beta = min(beta, best_value)
+                        if best_value <= alpha:
+                            return ReturnMove(best_value, best_move)
+
+                return ReturnMove(best_value, best_move)
+
+        if self.color == othelloBoard.white:
+            best_move = minValue(board, self.plies, -math.inf, math.inf).move
+            if best_move:
+                return (best_move[0], best_move[1], numHeuristicCalls)
+            else:
+                # None is considered a pass
+                return None
+        else:
+            best_move = maxValue(board, self.plies, -math.inf, math.inf).move
+            if best_move:
+                return (best_move[0], best_move[1], numHeuristicCalls)
+            else:
+                return None

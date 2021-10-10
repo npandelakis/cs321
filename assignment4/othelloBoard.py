@@ -165,7 +165,7 @@ class OthelloBoard:
             else:
                 plies = int(input("How many plies ahead " + \
                                   "should the computer look? "))
-                players[i] = othelloPlayers.ComputerPlayer(
+                players[i] = othelloPlayers.ComputerPlayerPruning(
                                'compy' + colorNames[i],colorValues[i],
                                othelloPlayers.heuristic,plies)
 
