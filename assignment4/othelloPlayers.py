@@ -43,7 +43,7 @@ class HumanPlayer:
 
 def heuristic(board) -> int:
     # Linearly combine our two heuristic functions to get a total heuristic value
-    return mobilityScore(board) + cornersCaptured(board)
+    return (mobilityScore(board) + cornersCaptured(board)) / 2
 
 
 def cornersCaptured(board) -> int:
@@ -202,8 +202,14 @@ class ComputerPlayerPruning:
             else:
                 moves = legalMoves(board, othelloBoard.black)
                 if len(moves) == 0:
-                    #0 for black score
-                    return ReturnMove(board.scores()[0], None)
+                    #100 for max win, -100 for min win
+                    max_score, min_score = board.scores()
+                    if max_score > min_score:
+                        return ReturnMove(100, None)
+                    elif max_score < min_score:
+                        return ReturnMove(-100, None)
+                    else:
+                        return ReturnMove(0,None)
                 else:
                     best_value = -math.inf
                     best_move = None
@@ -230,8 +236,13 @@ class ComputerPlayerPruning:
             else:
                 moves = legalMoves(board, othelloBoard.white)
                 if len(moves) == 0:
-                    #1 for white score
-                    return ReturnMove(board.scores()[1], None)
+                    max_score, min_score = board.scores()
+                    if max_score > min_score:
+                        return ReturnMove(100, None)
+                    elif max_score < min_score:
+                        return ReturnMove(-100, None)
+                    else:
+                        return ReturnMove(0,None)
                 else:
                     best_value = math.inf
                     best_move = None
