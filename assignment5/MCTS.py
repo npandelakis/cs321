@@ -33,7 +33,7 @@ class Node(object):
         self.parent = parent_node
         self.children = {} # maps moves (keys) to Nodes (values); if you use it differently, you must also change addMove
         self.visits = 0
-        self.value = float("nan")
+        self.value = 0
         # Note: you may add additional fields if needed
         
     def addMove(self, move):
@@ -58,12 +58,11 @@ class Node(object):
     def updateValue(self, outcome):
         """Updates the value estimate for the node's state.
         outcome: +1 for 1st player win, -1 for 2nd player win, 0 for draw."""
-        # NOTE: which outcome is preferred depends on self.state.turn()
         player_wins = self.value * self.visits
 
         if outcome == 0:
             player_wins += 0.5
-        elif self.state.turn == 1 and outcome == 1:
+        elif self.state.turn == -1:
             if outcome == 1:
                 player_wins += 1
         else:
@@ -100,8 +99,6 @@ def MCTS(root: Node, rollouts: int) -> int:
     
     for i in range(rollouts):    
         leaf = select(root)
-        # child = expand(leaf)
-        # outcome = simulate(child)
         if not leaf.state.isTerminal():
             child = expand(leaf)
             outcome = simulate(child)
@@ -111,12 +108,8 @@ def MCTS(root: Node, rollouts: int) -> int:
             outcome = child.state.value()
         back_propogate(outcome, child, root)
 
+    return max(root.children, key = lambda move: root.children[move].value)
 
-    return max(root.children, key = lambda move: root.children[move].UCBValue())
-
-
-
-    #return random_move(root) # Replace this line with a correct implementation
 
 def select(root: Node) -> Node:
     #traverse down tree, look for a move that generates a node that IS NOT CURRENTLY IN THE TREE!
@@ -128,6 +121,7 @@ def select(root: Node) -> Node:
             # We found a node to expand
             return root
         else:
+            #Take the best option and keep searching
             best_option = max(root.children.values(), key = lambda child: child.UCBValue())
             return select(best_option)
     else:
@@ -252,14 +246,14 @@ def play_game(args):
                 (args.second and node.state.turn == -1):
             move = MCTS(node, args.rollouts)
             if DISPLAY_BOARDS:
-                print(game1.show_values(node))
+                print(game1.print_board(node.state))
         else:
             if args.rolloutsSecondMCTSAgent == 0:
                 move = random_move(node)
             else:
                 move = MCTS(node2, args.rolloutsSecondMCTSAgent)
                 if DISPLAY_BOARDS:
-                    print(game1.show_values(node2))
+                    print(game1.print_board(node2.state))
         node.addMove(move)
         node = node.children[move]
         if args.rolloutsSecondMCTSAgent != 0:

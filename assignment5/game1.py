@@ -48,7 +48,6 @@ class State(object):
         Returns a vector of columns that one can place a piece in.
         """
         moves = np.nonzero(self._heights < HEIGHT)[0]
-
         np.random.shuffle(moves)
         return moves
 
